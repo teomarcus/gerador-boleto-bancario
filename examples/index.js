@@ -1,5 +1,5 @@
-
 const Gerador = require('../index');
+const GeradorDeDigitoPadrao = require('../lib/boleto/gerador-de-digito-padrao');
 const fs = require('fs');
 
 const gerarPdf = (boleto, stream = null)=>{
@@ -22,10 +22,11 @@ const gerarPdf = (boleto, stream = null)=>{
 };
 
 const gerarBoleto = (boleto_info)=>{
-	const { banco, pagador, boleto, beneficiario } = boleto_info;
-	const { datas, valor, especieDocumento, numeroDocumento } = boleto;
+	const banco = new Gerador.boleto.bancos.Caixa();
+	const { pagador, boleto, beneficiario } = boleto_info;
+	const { datas, valores, especieDocumento, numeroDocumento, instrucoes } = boleto;
+	const { documento: valorDoc, descAbatimentos } = valores;
 	const da = Gerador.boleto.Datas;
-	const instrucoes = createInstrucoes();
 
 	return Gerador.boleto.Boleto.novoBoleto()
 		.comDatas(da.novasDatas()
@@ -35,60 +36,78 @@ const gerarBoleto = (boleto_info)=>{
 		.comBeneficiario(createBeneficiario(beneficiario))
 		.comPagador(createPagador(pagador))
 		.comBanco(banco)
-		.comValorBoleto(parseFloat(valor).toFixed(2)) //Apenas duas casas decimais
+		.comLocaisDePagamento('Conforme instruções abaixo')
+		.comValorBoleto(parseFloat(valorDoc).toFixed(2))
+		.comValorDescontos(parseFloat(descAbatimentos).toFixed(2))
 		.comNumeroDoDocumento(numeroDocumento)
-		.comEspecieDocumento(especieDocumento) //Duplicata de Venda Mercantil
-		.comInstrucoes(instrucoes);
+		.comEspecieDocumento(especieDocumento)
+		.comInstrucoes(createInstrucoes(instrucoes));
 };
   
 const createPagador = (pagador)=>{
+	const {endereco} = pagador;
+
 	const enderecoPagador = Gerador.boleto.Endereco.novoEndereco()
-		.comLogradouro('Rua Pedro Lessa, 15')
-		.comBairro('Centro')
-		.comCidade('Rio de Janeiro')
-		.comUf('RJ')
-		.comCep('20030-030');
+		.comLogradouro(endereco.logradouro)
+		.comBairro(endereco.bairro)
+		.comCidade(endereco.cidade)
+		.comUf(endereco.uf)
+		.comCep(endereco.cep);
 
 	return Gerador.boleto.Pagador.novoPagador()
-		.comNome('José Bonifácio de Andrada')
+		.comNome(pagador.nome)
 		.comRegistroNacional(pagador.RegistroNacional)
 		.comEndereco(enderecoPagador);
 };
   
 const createBeneficiario = (beneficiario)=>{
 	const enderecoBeneficiario = Gerador.boleto.Endereco.novoEndereco()
-		.comLogradouro('Rua Pedro Lessa, 16')
-		.comBairro('Centro')
-		.comCidade('Rio de Janeiro')
-		.comUf('RJ')
-		.comCep('20030-030');
+		.comLogradouro('Rua do Beneficiário')
+		.comBairro('Bairro do Beneficiário')
+		.comCidade('São Paulo')
+		.comUf('SP')
+		.comCep('01234-567');
 
-	const {dadosBancarios} = beneficiario;
-
+	let {dadosBancarios} = beneficiario;
+	dadosBancarios = {
+		...dadosBancarios,
+		carteira:'14',
+		agencia: '00281',
+		digitoAgencia: '0',
+		codigoBeneficiario: '721692',
+		nome: 'TESTE GIM - MERITUS',
+		//registroNacional: '43576788000191', // CNPJ
+		cnpj: '43576788000191' // CNPJ
+	};
+	
 	let novoBeneficiario =  Gerador.boleto.Beneficiario.novoBeneficiario()
-		.comNome('Empresa Fictícia LTDA')
-		.comRegistroNacional('43576788000191')
 		.comCarteira(dadosBancarios.carteira)
-		.comAgencia(dadosBancarios.agencia)
-		.comDigitoAgencia(dadosBancarios.agenciaDigito)
-		.comCodigoBeneficiario(dadosBancarios.conta)
-		.comDigitoCodigoBeneficiario(dadosBancarios.contaDigito)
 		.comNossoNumero(dadosBancarios.nossoNumero) //11 -digitos // "00000005752"
-		.comDigitoNossoNumero(dadosBancarios.nossoNumeroDigito) // 1 digito // 8
+		.comDigitoNossoNumero(GeradorDeDigitoPadrao.mod11(dadosBancarios.carteira+dadosBancarios.nossoNumero, {de: [0, 10, 11], para: 0}))
+		.comAgencia(dadosBancarios.agencia)
+		.comDigitoAgencia(dadosBancarios.digitoAgencia)
+		.comCodigoBeneficiario(dadosBancarios.codigoBeneficiario) // TODO: 7 digits
+		.comDigitoCodigoBeneficiario(GeradorDeDigitoPadrao.mod11(dadosBancarios.codigoBeneficiario, {de: [0, 10, 11], para: 0}))
+		.comNome(dadosBancarios.nome)
+		//.comRegistroNacional(dadosBancarios.registroNacional)
+		.comCNPJ(dadosBancarios.cnpj)
 		.comEndereco(enderecoBeneficiario);
 
+	if(dadosBancarios.nossoNumeroDigito){
+		novoBeneficiario.comDigitoNossoNumero(dadosBancarios.nossoNumeroDigito); // 1 digito // 8
+	}
 	if(dadosBancarios.convenio){
 		novoBeneficiario.comNumeroConvenio(dadosBancarios.convenio);
 	}
 
 	return novoBeneficiario;
 };
-  
-const createInstrucoes = ()=>{
-	const instrucoes = [];
-	instrucoes.push('Após o vencimento Mora dia R$ 1,59');
-	instrucoes.push('Após o vencimento, multa de 2%');
-	return instrucoes;
+
+const createInstrucoes = (instrucoes)=>{
+	const instrucoesCompletas = [...instrucoes];
+	instrucoesCompletas.unshift('Pagável preferencialmente na CAIXA ECONOMICA FEDERAL');
+	
+	return instrucoesCompletas;
 };
 
 module.exports = { gerarPdf, gerarBoleto };

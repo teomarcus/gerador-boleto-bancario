@@ -11,8 +11,8 @@ const boleto = {
 		}
 	},
 	pagador: { 
-		RegistroNacional: '000014205447809', // TODO: mostrar no boleto,
-    	cpf: '12345678-4',
+		RegistroNacional: '000014205447809', // TODO: mostrar no boleto
+    	cpf: '123456789-01', // TODO: mostrar no boleto
 		nome: 'Nome do Pagador',
 		endereco:{
 			logradouro: 'Rua do Pagador',

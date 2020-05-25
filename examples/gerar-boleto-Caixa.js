@@ -3,7 +3,7 @@ const { gerarPdf, gerarBoleto} = require('./index');
 const streamToPromise = require('../lib/utils/util');
 
 const boleto = {
-	//banco: new Gerador.boleto.bancos.Caixa(),
+	banco: new Gerador.boleto.bancos.Caixa(),
 	beneficiario: {
 		dadosBancarios:{
 			nossoNumero: '000082107220355', // valor unico de 15 digitos
@@ -12,7 +12,7 @@ const boleto = {
 	},
 	pagador: { 
 		RegistroNacional: '000014205447809', // TODO: mostrar no boleto,
-    cpf: '12345678-4',
+    	cpf: '12345678-4',
 		nome: 'Nome do Pagador',
 		endereco:{
 			logradouro: 'Rua do Pagador',

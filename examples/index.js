@@ -22,8 +22,7 @@ const gerarPdf = (boleto, stream = null)=>{
 };
 
 const gerarBoleto = (boleto_info)=>{
-	const banco = new Gerador.boleto.bancos.Caixa();
-	const { pagador, boleto, beneficiario } = boleto_info;
+	const { banco, pagador, boleto, beneficiario } = boleto_info;
 	const { datas, valores, especieDocumento, numeroDocumento, instrucoes } = boleto;
 	const { documento: valorDoc, descAbatimentos } = valores;
 	const da = Gerador.boleto.Datas;

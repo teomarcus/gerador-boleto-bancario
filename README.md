@@ -3,7 +3,13 @@
 [![NPM gerar-boletos package](https://img.shields.io/npm/v/gerar-boletos.svg)](https://npmjs.org/package/gerar-boletos)
 <!-- [END badges] -->
 
-Biblioteca em Node.js para geração de boletos utilizando PDFKit baseada e modificada a partir do [gerador-boletos](https://npmjs.org/package/gerador-boletos) para atender as minhas necessidades
+Biblioteca em Node.js para geração de boletos utilizando PDFKit baseada e modificada a partir do [gerador-boletos](https://npmjs.org/package/gerador-boletos).
+
+Principais mudanças contempladas: (tarefas ainda em andamento)
+- Novo modelo de boleto com correções de quebra de página
+- Novo modelo de recibo do pagador com campo de descrições
+- Adaptações de exemplo para Caixa Econômica Federal
+- Opção para saída do PDF em blob para download ou visualização direta no browser.
 
 Geração de boletos para bancos:
 - Bradesco

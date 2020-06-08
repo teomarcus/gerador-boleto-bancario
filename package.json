@@ -35,9 +35,9 @@
     "sicoob"
   ],
   "author": {
-    "name": "Rômulo Cabral Santos",
-    "email": "romulosanttos1@gmail.com",
-    "homepage": "https://romulosanttos.github.io/"
+    "name": "Téo Marcus",
+    "email": "teo@teomarcus.com",
+    "homepage": "http://www.teomarcus.com/"
   },
   "license": "ISC",
   "engines": {
@@ -54,6 +54,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Romulosanttos/gerar-boletos.git"
+    "url": "git+https://github.com/teomarcus/gerar-boletos.git"
+  },
+  "comments": {
+    "original author name": "Rômulo Cabral Santos",
+    "original author email": "romulosanttos1@gmail.com",
+    "original author homepage": "https://romulosanttos.github.io/",
+    "original url git": "git+https://github.com/Romulosanttos/gerar-boletos.git"
   }
 }

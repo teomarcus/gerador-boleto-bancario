@@ -1,33 +1,38 @@
-const Gerador = require('../index');
-const GeradorDeDigitoPadrao = require('../lib/boleto/gerador-de-digito-padrao');
+const Gerador = require('./gerar-boletos');
 const fs = require('fs');
 
-const gerarPdf = (boleto, stream = null)=>{
-	
+const gerarPdf = (boleto, fileName = null, stream = null)=>{
+	if(!fileName){
+		fileName = 'boleto';
+	}
 	if(!stream){
-		const dir = './tmp/boletos';
+		const dir = './tmp/';
 		if (!fs.existsSync(dir)) fs.mkdirSync(dir);
-		stream = fs.createWriteStream(`${dir}/boleto.pdf`);
+		stream = fs.createWriteStream(`${dir}${fileName}.pdf`);
 	}
 
-	return new Promise(async (resolve)=> {
+	return new Promise(async (resolve, reject)=> {
 		return await new Gerador.boleto.Gerador(boleto).gerarPDF({
 			creditos: '',
 			stream: stream
-		}).then(()=>{
-			return resolve({boleto, stream});
+		}).then(pdf=>{
+			return resolve({pdf: pdf, path:stream.path});
+		}).catch(error => {
+			return reject(error);
 		});
 	});
 	
 };
 
 const gerarBoleto = (boleto_info)=>{
-	const { banco, pagador, boleto, beneficiario } = boleto_info;
-	const { datas, valores, especieDocumento, numeroDocumento, instrucoes } = boleto;
-	const { documento: valorDoc, descAbatimentos } = valores;
+	const { banco } = boleto_info;
+	const { pagador, sacadorAvalista, boleto, beneficiario } = boleto_info;
+	const { datas, valores, especieDocumento, numeroDocumento, instrucoes, informacoesRecibo, locaisPagamento } = boleto;
+	const { documento: valorDoc, descontos, deducoes, moraMulta, outrosAcrescimos } = valores;
 	const da = Gerador.boleto.Datas;
 
-	return Gerador.boleto.Boleto.novoBoleto()
+	
+	let novoBoleto = Gerador.boleto.Boleto.novoBoleto()
 		.comDatas(da.novasDatas()
 			.comVencimento(datas.vencimento)
 			.comProcessamento(datas.processamento)
@@ -35,12 +40,30 @@ const gerarBoleto = (boleto_info)=>{
 		.comBeneficiario(createBeneficiario(beneficiario))
 		.comPagador(createPagador(pagador))
 		.comBanco(banco)
-		.comLocaisDePagamento('Conforme instruções abaixo')
+		.comLocaisDePagamento(locaisPagamento)
 		.comValorBoleto(parseFloat(valorDoc).toFixed(2))
-		.comValorDescontos(parseFloat(descAbatimentos).toFixed(2))
 		.comNumeroDoDocumento(numeroDocumento)
 		.comEspecieDocumento(especieDocumento)
+		.comDescricoes(informacoesRecibo)
 		.comInstrucoes(createInstrucoes(instrucoes));
+
+	if(sacadorAvalista){
+		novoBoleto.comsacadorAvalista(createSacadorAvalista(sacadorAvalista));
+	}
+	if(descontos){
+		novoBoleto.comValorDescontos(parseFloat(descontos).toFixed(2));
+	}
+	if(deducoes){
+		novoBoleto.comValorDeducoes(parseFloat(deducoes).toFixed(2));
+	}
+	if(moraMulta){
+		novoBoleto.comValorMulta(parseFloat(moraMulta).toFixed(2));
+	}
+	if(outrosAcrescimos){
+		novoBoleto.comValorAcrescimos(parseFloat(outrosAcrescimos).toFixed(2));
+	}
+
+	return novoBoleto;
 };
   
 const createPagador = (pagador)=>{
@@ -55,45 +78,46 @@ const createPagador = (pagador)=>{
 
 	return Gerador.boleto.Pagador.novoPagador()
 		.comNome(pagador.nome)
-		.comRegistroNacional(pagador.RegistroNacional)
+		//.comRegistroNacional(pagador.RegistroNacional)
+		.comCPF(pagador.cpf)
 		.comEndereco(enderecoPagador);
+};
+
+const createSacadorAvalista = (sacadorAvalista)=>{
+	return Gerador.boleto.SacadorAvalista.novoSacadorAvalista()
+		.comNome(sacadorAvalista.nome)
+		//.comRegistroNacional(sacadorAvalista.RegistroNacional)
+		//.comCNPJ(sacadorAvalista.cnpj)
+		.comCPF(sacadorAvalista.cpf);
 };
   
 const createBeneficiario = (beneficiario)=>{
+	const {endereco} = beneficiario;
+
 	const enderecoBeneficiario = Gerador.boleto.Endereco.novoEndereco()
-		.comLogradouro('Rua do Beneficiário')
-		.comBairro('Bairro do Beneficiário')
-		.comCidade('São Paulo')
-		.comUf('SP')
-		.comCep('01234-567');
+		.comLogradouro(endereco.logradouro)
+		.comBairro(endereco.bairro)
+		.comCidade(endereco.cidade)
+		.comUf(endereco.uf)
+		.comCep(endereco.cep);
 
 	let {dadosBancarios} = beneficiario;
-	dadosBancarios = {
-		...dadosBancarios,
-		carteira:'14',
-		agencia: '00281',
-		digitoAgencia: '0',
-		codigoBeneficiario: '721692',
-		nome: 'TESTE GIM - MERITUS',
-		//registroNacional: '43576788000191', // CNPJ
-		cnpj: '43576788000191' // CNPJ
-	};
 	
 	let novoBeneficiario =  Gerador.boleto.Beneficiario.novoBeneficiario()
 		.comCarteira(dadosBancarios.carteira)
-		.comNossoNumero(dadosBancarios.nossoNumero) //11 -digitos // "00000005752"
-		.comDigitoNossoNumero(GeradorDeDigitoPadrao.mod11(dadosBancarios.carteira+dadosBancarios.nossoNumero, {de: [0, 10, 11], para: 0}))
+		.comNossoNumero(dadosBancarios.nossoNumero) //11 -digitos
+		.comDigitoNossoNumero(dadosBancarios.digitoNossoNumero)
 		.comAgencia(dadosBancarios.agencia)
 		.comDigitoAgencia(dadosBancarios.digitoAgencia)
 		.comCodigoBeneficiario(dadosBancarios.codigoBeneficiario) // TODO: 7 digits
-		.comDigitoCodigoBeneficiario(GeradorDeDigitoPadrao.mod11(dadosBancarios.codigoBeneficiario, {de: [0, 10, 11], para: 0}))
+		.comDigitoCodigoBeneficiario(dadosBancarios.digitoCodBeneficiario)
 		.comNome(dadosBancarios.nome)
 		//.comRegistroNacional(dadosBancarios.registroNacional)
 		.comCNPJ(dadosBancarios.cnpj)
 		.comEndereco(enderecoBeneficiario);
 
 	if(dadosBancarios.nossoNumeroDigito){
-		novoBeneficiario.comDigitoNossoNumero(dadosBancarios.nossoNumeroDigito); // 1 digito // 8
+		novoBeneficiario.comDigitoNossoNumero(dadosBancarios.nossoNumeroDigito); // 1 digito
 	}
 	if(dadosBancarios.convenio){
 		novoBeneficiario.comNumeroConvenio(dadosBancarios.convenio);
@@ -103,10 +127,7 @@ const createBeneficiario = (beneficiario)=>{
 };
 
 const createInstrucoes = (instrucoes)=>{
-	const instrucoesCompletas = [...instrucoes];
-	instrucoesCompletas.unshift('Pagável preferencialmente na CAIXA ECONOMICA FEDERAL');
-	
-	return instrucoesCompletas;
+	return instrucoes;
 };
 
 module.exports = { gerarPdf, gerarBoleto };

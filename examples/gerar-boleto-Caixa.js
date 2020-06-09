@@ -1,7 +1,7 @@
 const Gerador = require('../index');
 const { gerarPdf, gerarBoleto} = require('./index');
-//const streamToPromise = require('../lib/utils/util');
 const GeradorDeDigitoPadrao = require('../lib/boleto/gerador-de-digito-padrao');
+//const streamToPromise = require('../lib/utils/util');
 //const async  = require('express-async-errors'); // if using Express Server
 
 const gerar_Boleto_PDF = async dadosBoleto => {
@@ -13,19 +13,19 @@ const gerar_Boleto_PDF = async dadosBoleto => {
 	const { documento: valorDoc, descontos: valorDesc, deducoes: valorDeducoes, moraMulta: valorMulta, outrosAcrescimos: valorAcres, cobrado: valorCobrado } = valores;
 	const { vencimento: dataVenc, processamento: dataProc, documentos: dataDoc } = datas;
 	
-	const codBeneficiario = '7654321';
+	const codBeneficiario = '721692';
 
 	const dadosCompletosBoleto = {
 		banco: new Gerador.boleto.bancos.Caixa(),
 		beneficiario: {
 			dadosBancarios:{
 				carteira:'14',
-				agencia: '00321',
+				agencia: '00281',
 				digitoAgencia: '0',
 				codigoBeneficiario: codBeneficiario,
 				nome: 'Nome do Beneficiário',
 				//registroNacional: '12345678000191',
-				cnpj: '12345678000191',
+				cnpj: '67781392000144', // somente digitos
 				nossoNumero: nossoNumero,
 				digitoNossoNumero: GeradorDeDigitoPadrao.mod11(nossoNumero, {de: [0, 10, 11], para: 0})+'', // string
 				digitoCodBeneficiario: GeradorDeDigitoPadrao.mod11(codBeneficiario, {de: [0, 10, 11], para: 0})+'' // string
@@ -87,14 +87,14 @@ const gerar_Boleto_PDF = async dadosBoleto => {
 
 const dadosBoleto = {
 	pagador: {
-	  cpf: '123456789-01',
+	  cpf: '97653667015', // somente digitos
 	  nome: 'Nome do Pagador',
 	  endereco: {
 		logradouro: 'Rua do Pagador, 123',
 		bairro: 'Bairro do Pagador',
 		cidade: 'Cidade',
 		uf: 'SP',
-		cep: '16057580'
+		cep: '09876540'
 	  }
 	},
 	boleto: {
@@ -124,4 +124,10 @@ const dadosBoleto = {
 	}
   };
 
-  const retornoBoleto = await gerar_Boleto_PDF(dadosBoleto);
+  gerar = async () => {
+	const retornoBoleto = await gerar_Boleto_PDF(dadosBoleto);
+	console.log('ARQUIVO DO BOLETO: ', retornoBoleto.path);
+  }
+  
+  gerar();
+

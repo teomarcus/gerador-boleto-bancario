@@ -11,9 +11,7 @@
   "scripts": {
     "test": "nodeunit ./tests/*test.js && nodeunit ./tests/boleto/bancos/*test.js && nodeunit ./tests/boleto/*test.js",
     "lint": "eslint .",
-    "gerarBradesco": "node ./examples/gerar-boleto-bradesco.js",
-    "gerarCecred": "node ./examples/gerar-boleto-cecred.js",
-    "gerarBrasil": "node ./examples/gerar-boleto-BancoDoBrasil.js"
+    "gerarCaixa": "node ./examples/gerar-boleto-Caixa.js"
   },
   "keywords": [
     "gerador",

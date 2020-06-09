@@ -1,4 +1,4 @@
-const Gerador = require('./gerar-boletos');
+const Gerador = require('../index');
 const fs = require('fs');
 
 const gerarPdf = (boleto, fileName = null, stream = null)=>{

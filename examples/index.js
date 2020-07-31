@@ -6,7 +6,7 @@ const gerarPdf = (boleto, fileName = null, stream = null)=>{
 		fileName = 'boleto';
 	}
 	if(!stream){
-		const dir = './tmp/';
+		const dir = '../tmp/';
 		if (!fs.existsSync(dir)) fs.mkdirSync(dir);
 		stream = fs.createWriteStream(`${dir}${fileName}.pdf`);
 	}
